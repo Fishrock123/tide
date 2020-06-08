@@ -1,5 +1,5 @@
 use std::convert::TryInto;
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 use std::ops::Index;
 
 use crate::http::cookies::Cookie;
@@ -206,6 +206,13 @@ impl Response {
     /// Returns an optional reference to the `Error` if the response was created from one, or else `None`.
     pub fn error(&self) -> Option<&Error> {
         self.res.error()
+    }
+
+    pub fn downcast_error<E>(&self) -> Option<&E>
+    where
+        E: Display + Debug + Send + Sync + 'static,
+    {
+        self.res.error()?.downcast_ref()
     }
 
     /// Takes the `Error` from the response if one exists, replacing it with `None`.
