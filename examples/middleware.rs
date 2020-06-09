@@ -26,17 +26,17 @@ impl UserDatabase {
 fn user_loader<'a>(
     mut request: Request<UserDatabase>,
     next: Next<'a, UserDatabase>,
-) -> Pin<Box<dyn Future<Output = Result> + Send + 'a>> {
+) -> Pin<Box<dyn Future<Output = Response> + Send + 'a>> {
     Box::pin(async {
         if let Some(user) = request.state().find_user().await {
             tide::log::trace!("user loaded", {user: user.name});
             request.set_ext(user);
-            Ok(next.run(request).await)
+            next.run(request).await
         // this middleware only needs to run before the endpoint, so
         // it just passes through the result of Next
         } else {
             // do not run endpoints, we could not find a user
-            Ok(Response::new(StatusCode::Unauthorized))
+            Response::new(StatusCode::Unauthorized)
         }
     })
 }
@@ -65,7 +65,7 @@ impl<State: Send + Sync + 'static> Middleware<State> for RequestCounterMiddlewar
         &'a self,
         mut req: Request<State>,
         next: Next<'a, State>,
-    ) -> Pin<Box<dyn Future<Output = Result> + Send + 'a>> {
+    ) -> Pin<Box<dyn Future<Output = Response> + Send + 'a>> {
         Box::pin(async move {
             let count = self.requests_counted.fetch_add(1, Ordering::Relaxed);
             tide::log::trace!("request counter", { count: count });
@@ -74,7 +74,7 @@ impl<State: Send + Sync + 'static> Middleware<State> for RequestCounterMiddlewar
             let mut res = next.run(req).await;
 
             res.insert_header("request-number", count.to_string());
-            Ok(res)
+            res
         })
     }
 }
@@ -105,15 +105,15 @@ async fn main() -> Result<()> {
                 let mut res = Response::new(404);
                 res.set_content_type(mime::HTML);
                 res.set_body(NOT_FOUND_HTML_PAGE);
-                Ok(res)
+                res
             }
             StatusCode::InternalServerError => {
                 let mut res = Response::new(500);
                 res.set_content_type(mime::HTML);
                 res.set_body(INTERNAL_SERVER_ERROR_HTML_PAGE);
-                Ok(res)
+                res
             }
-            _ => Ok(response),
+            _ => response,
         }
     }));
 
@@ -128,10 +128,10 @@ async fn main() -> Result<()> {
         let count: &RequestCount = req.ext().unwrap();
         let user: &User = req.ext().unwrap();
 
-        Ok(format!(
+        format!(
             "Hello {}, this was request number {}!",
             user.name, count.0
-        ))
+        ).into()
     });
 
     app.listen("127.0.0.1:8080").await?;

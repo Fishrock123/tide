@@ -84,12 +84,12 @@ impl<State: 'static + Send + Sync> Router<State> {
 
 fn not_found_endpoint<State: Send + Sync + 'static>(
     _cx: Request<State>,
-) -> BoxFuture<'static, crate::Result> {
-    Box::pin(async move { Ok(Response::new(StatusCode::NotFound)) })
+) -> BoxFuture<'static, Response> {
+    Box::pin(async move { Response::new(StatusCode::NotFound) })
 }
 
 fn method_not_allowed<State: Send + Sync + 'static>(
     _cx: Request<State>,
-) -> BoxFuture<'static, crate::Result> {
-    Box::pin(async move { Ok(Response::new(StatusCode::MethodNotAllowed)) })
+) -> BoxFuture<'static, Response> {
+    Box::pin(async move { Response::new(StatusCode::MethodNotAllowed) })
 }

@@ -1,6 +1,6 @@
 use crate::log;
 use crate::utils::BoxFuture;
-use crate::{Middleware, Next, Request};
+use crate::{Middleware, Next, Request, Response};
 
 /// Log all incoming requests and responses.
 ///
@@ -29,7 +29,7 @@ impl LogMiddleware {
         &'a self,
         ctx: Request<State>,
         next: Next<'a, State>,
-    ) -> crate::Result {
+    ) -> Response {
         let path = ctx.url().path().to_owned();
         let method = ctx.method().to_string();
         log::info!("<-- Request received", {
@@ -62,7 +62,7 @@ impl LogMiddleware {
                 duration: format!("{:?}", start.elapsed()),
             });
         }
-        Ok(response)
+        response
     }
 }
 
@@ -71,7 +71,7 @@ impl<State: Send + Sync + 'static> Middleware<State> for LogMiddleware {
         &'a self,
         ctx: Request<State>,
         next: Next<'a, State>,
-    ) -> BoxFuture<'a, crate::Result> {
+    ) -> BoxFuture<'a, Response> {
         Box::pin(async move { self.log(ctx, next).await })
     }
 }

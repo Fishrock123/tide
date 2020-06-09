@@ -1,6 +1,7 @@
 use std::convert::TryInto;
 use std::fmt::{Debug, Display};
 use std::ops::Index;
+use std::ops::Try;
 
 use crate::http::cookies::Cookie;
 use crate::http::headers::{self, HeaderName, HeaderValues, ToHeaderValues};
@@ -390,5 +391,22 @@ impl Index<&str> for Response {
     #[inline]
     fn index(&self, name: &str) -> &HeaderValues {
         &self.res[name]
+    }
+}
+
+impl Try for Response {
+    type Ok = Self;
+    type Error = Error;
+
+    fn into_result(self) -> crate::Result {
+        Ok(self)
+    }   
+
+    fn from_error(error: Self::Error) -> Self {
+        error.into()
+    }
+
+    fn from_ok(res: Self::Ok) -> Self {
+        res
     }
 }

@@ -18,7 +18,7 @@ fn hello_world() -> Result<(), http_types::Error> {
                 assert!(req.peer_addr().is_some());
                 let mut res = Response::new(StatusCode::Ok);
                 res.set_body("says hello");
-                Ok(res)
+                res
             });
             app.listen(("localhost", port)).await?;
             Result::<(), http_types::Error>::Ok(())
@@ -45,7 +45,7 @@ fn echo_server() -> Result<(), http_types::Error> {
         let port = test_utils::find_port().await;
         let server = task::spawn(async move {
             let mut app = tide::new();
-            app.at("/").get(|req| async move { Ok(req) });
+            app.at("/").get(|req: Request<()>| async move { req.into() });
 
             app.listen(("localhost", port)).await?;
             Result::<(), http_types::Error>::Ok(())
@@ -83,7 +83,7 @@ fn json() -> Result<(), http_types::Error> {
                 counter.count = 1;
                 let mut res = Response::new(StatusCode::Ok);
                 res.set_body(Body::from_json(&counter)?);
-                Ok(res)
+                res
             });
             app.listen(("localhost", port)).await?;
             Result::<(), http_types::Error>::Ok(())

@@ -22,17 +22,17 @@ fn main() -> tide::Result<()> {
 
             let mut res = Response::new(200);
             res.set_body(Body::from_json(&cat)?);
-            Ok(res)
+            res
         });
 
         app.at("/animals").get(|_| async {
-            Ok(json!({
+            json!({
                 "meta": { "count": 2 },
                 "animals": [
                     { "type": "cat", "name": "chashu" },
                     { "type": "cat", "name": "nori" }
                 ]
-            }))
+            }).into()
         });
 
         app.listen("127.0.0.1:8080").await?;

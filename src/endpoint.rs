@@ -1,6 +1,5 @@
 use async_std::future::Future;
 use async_std::sync::Arc;
-use http_types::Result;
 
 use crate::middleware::Next;
 use crate::utils::BoxFuture;
@@ -23,8 +22,8 @@ use crate::{Middleware, Request, Response};
 /// A simple endpoint that is invoked on a `GET` request and returns a `String`:
 ///
 /// ```no_run
-/// async fn hello(_req: tide::Request<()>) -> tide::Result<String> {
-///     Ok(String::from("hello"))
+/// async fn hello(_req: tide::Request<()>) -> tide::Response {
+///     "hello".into()
 /// }
 ///
 /// let mut app = tide::Server::new();
@@ -35,8 +34,8 @@ use crate::{Middleware, Request, Response};
 ///
 /// ```no_run
 /// # use core::future::Future;
-/// fn hello(_req: tide::Request<()>) -> impl Future<Output = tide::Result<String>> {
-///     async_std::future::ready(Ok(String::from("hello")))
+/// fn hello(_req: tide::Request<()>) -> impl Future<Output = tide::Response> {
+///     async_std::future::ready("hello".into())
 /// }
 ///
 /// let mut app = tide::Server::new();
@@ -46,23 +45,21 @@ use crate::{Middleware, Request, Response};
 /// Tide routes will also accept endpoints with `Fn` signatures of this form, but using the `async` keyword has better ergonomics.
 pub trait Endpoint<State: Send + Sync + 'static>: Send + Sync + 'static {
     /// Invoke the endpoint within the given context
-    fn call<'a>(&'a self, req: Request<State>) -> BoxFuture<'a, crate::Result>;
+    fn call<'a>(&'a self, req: Request<State>) -> BoxFuture<'a, Response>;
 }
 
 pub(crate) type DynEndpoint<State> = dyn Endpoint<State>;
 
-impl<State, F, Fut, Res> Endpoint<State> for F
+impl<State, F, Fut> Endpoint<State> for F
 where
     State: Send + Sync + 'static,
     F: Send + Sync + 'static + Fn(Request<State>) -> Fut,
-    Fut: Future<Output = Result<Res>> + Send + 'static,
-    Res: Into<Response>,
+    Fut: Future<Output = Response> + Send + 'static,
 {
-    fn call<'a>(&'a self, req: Request<State>) -> BoxFuture<'a, crate::Result> {
+    fn call<'a>(&'a self, req: Request<State>) -> BoxFuture<'a, Response> {
         let fut = (self)(req);
         Box::pin(async move {
-            let res = fut.await?;
-            Ok(res.into())
+            fut.await
         })
     }
 }
@@ -108,11 +105,11 @@ impl<E, State: 'static + Send + Sync> Endpoint<State> for MiddlewareEndpoint<E, 
 where
     E: Endpoint<State>,
 {
-    fn call<'a>(&'a self, req: Request<State>) -> BoxFuture<'a, crate::Result> {
+    fn call<'a>(&'a self, req: Request<State>) -> BoxFuture<'a, Response> {
         let next = Next {
             endpoint: &self.endpoint,
             next_middleware: &self.middleware,
         };
-        Box::pin(async move { Ok(next.run(req).await) })
+        Box::pin(async move { next.run(req).await })
     }
 }

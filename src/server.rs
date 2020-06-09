@@ -11,7 +11,7 @@ use crate::log;
 use crate::middleware::{Middleware, Next};
 use crate::router::{Router, Selection};
 use crate::utils::BoxFuture;
-use crate::{Endpoint, Request, Route};
+use crate::{Endpoint, Request, Route, Response};
 
 /// An HTTP server.
 ///
@@ -143,7 +143,7 @@ impl Server<()> {
     /// # fn main() -> Result<(), std::io::Error> { block_on(async {
     /// #
     /// let mut app = tide::new();
-    /// app.at("/").get(|_| async move { Ok("Hello, world!") });
+    /// app.at("/").get(|_| async move { "Hello, world!".into() });
     /// app.listen("127.0.0.1:8080").await?;
     /// #
     /// # Ok(()) }) }
@@ -186,7 +186,7 @@ impl<State: Send + Sync + 'static> Server<State> {
     /// // Initialize the application with state.
     /// let mut app = tide::with_state(state);
     /// app.at("/").get(|req: Request<State>| async move {
-    ///     Ok(format!("Hello, {}!", &req.state().name))
+    ///     format!("Hello, {}!", &req.state().name).into()
     /// });
     /// app.listen("127.0.0.1:8080").await?;
     /// #
@@ -213,7 +213,7 @@ impl<State: Send + Sync + 'static> Server<State> {
     ///
     /// ```rust,no_run
     /// # let mut app = tide::Server::new();
-    /// app.at("/").get(|_| async move { Ok("Hello, world!") });
+    /// app.at("/").get(|_| async move { "Hello, world!".into() });
     /// ```
     ///
     /// A path is comprised of zero or many segments, i.e. non-empty strings
@@ -369,7 +369,7 @@ impl<State: Send + Sync + 'static> Server<State> {
     /// use tide::http::{Url, Method, Request, Response};
     ///
     /// let mut app = tide::new();
-    /// app.at("/").get(|_| async move { Ok("hello world") });
+    /// app.at("/").get(|_| async move { "hello world".into() });
     ///
     /// let req = Request::new(Method::Get, Url::parse("https://example.com")?);
     /// let res: Response = app.respond(req).await?;
@@ -432,7 +432,7 @@ impl<State> Clone for Server<State> {
 impl<State: Sync + Send + 'static, InnerState: Sync + Send + 'static> Endpoint<State>
     for Server<InnerState>
 {
-    fn call<'a>(&'a self, req: Request<State>) -> BoxFuture<'a, crate::Result> {
+    fn call<'a>(&'a self, req: Request<State>) -> BoxFuture<'a, Response> {
         let Request {
             req,
             mut route_params,
@@ -454,7 +454,7 @@ impl<State: Sync + Send + 'static, InnerState: Sync + Send + 'static> Endpoint<S
                 next_middleware: &middleware,
             };
 
-            Ok(next.run(req).await)
+            next.run(req).await
         })
     }
 }

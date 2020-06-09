@@ -7,7 +7,7 @@ use crate::endpoint::MiddlewareEndpoint;
 use crate::fs::ServeDir;
 use crate::log;
 use crate::utils::BoxFuture;
-use crate::{router::Router, Endpoint, Middleware};
+use crate::{router::Router, Endpoint, Middleware, Response};
 
 /// A handle to a route.
 ///
@@ -279,7 +279,7 @@ where
     State: 'static + Send + Sync,
     E: Endpoint<State>,
 {
-    fn call<'a>(&'a self, req: crate::Request<State>) -> BoxFuture<'a, crate::Result> {
+    fn call<'a>(&'a self, req: crate::Request<State>) -> BoxFuture<'a, Response> {
         let crate::Request {
             state,
             mut req,

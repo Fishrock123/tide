@@ -44,7 +44,7 @@ where
     F: Fn(Request<State>, Sender) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = Result<()>> + Send + Sync + 'static,
 {
-    fn call<'a>(&'a self, req: Request<State>) -> BoxFuture<'a, Result<Response>> {
+    fn call<'a>(&'a self, req: Request<State>) -> BoxFuture<'a, Response> {
         let handler = self.handler.clone();
         Box::pin(async move {
             let (sender, encoder) = async_sse::encode();
@@ -64,7 +64,7 @@ where
             let body = Body::from_reader(BufReader::new(encoder), None);
             res.set_body(body);
 
-            Ok(res)
+            res
         })
     }
 }
