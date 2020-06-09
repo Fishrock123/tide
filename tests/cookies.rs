@@ -6,31 +6,31 @@ use tide::{Request, Response, Server, StatusCode};
 
 static COOKIE_NAME: &str = "testCookie";
 
-async fn retrieve_cookie(cx: Request<()>) -> tide::Result<String> {
-    Ok(format!(
+async fn retrieve_cookie(cx: Request<()>) -> tide::Response {
+    format!(
         "{} and also {}",
         cx.cookie(COOKIE_NAME).unwrap().value(),
         cx.cookie("secondTestCookie").unwrap().value()
-    ))
+    ).into()
 }
 
-async fn insert_cookie(_req: Request<()>) -> tide::Result {
+async fn insert_cookie(_req: Request<()>) -> tide::Response {
     let mut res = Response::new(StatusCode::Ok);
     res.insert_cookie(Cookie::new(COOKIE_NAME, "NewCookieValue"));
-    Ok(res)
+    res
 }
 
-async fn remove_cookie(_req: Request<()>) -> tide::Result {
+async fn remove_cookie(_req: Request<()>) -> tide::Response {
     let mut res = Response::new(StatusCode::Ok);
     res.remove_cookie(Cookie::named(COOKIE_NAME));
-    Ok(res)
+    res
 }
 
-async fn set_multiple_cookie(_req: Request<()>) -> tide::Result {
+async fn set_multiple_cookie(_req: Request<()>) -> tide::Response {
     let mut res = Response::new(StatusCode::Ok);
     res.insert_cookie(Cookie::new("C1", "V1"));
     res.insert_cookie(Cookie::new("C2", "V2"));
-    Ok(res)
+    res
 }
 
 fn app() -> crate::Server<()> {

@@ -1,6 +1,6 @@
 use crate::response::CookieEvent;
 use crate::utils::BoxFuture;
-use crate::{Middleware, Next, Request};
+use crate::{Middleware, Next, Request, Response};
 
 use crate::http::cookies::{Cookie, CookieJar, Delta};
 use crate::http::headers;
@@ -15,11 +15,11 @@ use std::sync::{Arc, RwLock};
 /// # use tide::{Request, Response, StatusCode};
 /// # use tide::http::cookies::Cookie;
 /// let mut app = tide::Server::new();
-/// app.at("/get").get(|cx: Request<()>| async move { Ok(cx.cookie("testCookie").unwrap().value().to_string()) });
+/// app.at("/get").get(|cx: Request<()>| async move { cx.cookie("testCookie").unwrap().value().to_string().into() });
 /// app.at("/set").get(|_| async {
 ///     let mut res = Response::new(StatusCode::Ok);
 ///     res.insert_cookie(Cookie::new("testCookie", "NewCookieValue"));
-///     Ok(res)
+///     res
 /// });
 /// ```
 #[derive(Debug, Clone, Default)]
@@ -37,7 +37,7 @@ impl<State: Send + Sync + 'static> Middleware<State> for CookiesMiddleware {
         &'a self,
         mut ctx: Request<State>,
         next: Next<'a, State>,
-    ) -> BoxFuture<'a, crate::Result> {
+    ) -> BoxFuture<'a, Response> {
         Box::pin(async move {
             let cookie_jar = if let Some(cookie_data) = ctx.ext::<CookieData>() {
                 cookie_data.content.clone()
@@ -53,7 +53,7 @@ impl<State: Send + Sync + 'static> Middleware<State> for CookiesMiddleware {
 
             // Don't do anything if there are no cookies.
             if res.cookie_events.is_empty() {
-                return Ok(res);
+                return res;
             }
 
             let jar = &mut *cookie_jar.write().unwrap();
@@ -71,7 +71,7 @@ impl<State: Send + Sync + 'static> Middleware<State> for CookiesMiddleware {
                 let encoded_cookie = cookie.encoded().to_string();
                 res.append_header(headers::SET_COOKIE, encoded_cookie);
             }
-            Ok(res)
+            res
         })
     }
 }

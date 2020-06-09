@@ -9,7 +9,7 @@
 //! use tide::Redirect;
 //!
 //! let mut app = tide::new();
-//! app.at("/").get(|_| async move { Ok("meow") });
+//! app.at("/").get(|_| async move { "meow".into() });
 //! app.at("/nori").get(Redirect::temporary("/"));
 //! app.listen("127.0.0.1:8080").await?;
 //! #
@@ -91,9 +91,9 @@ where
     State: Send + Sync + 'static,
     T: AsRef<str> + Send + Sync + 'static,
 {
-    fn call<'a>(&'a self, _req: Request<State>) -> BoxFuture<'a, crate::Result<Response>> {
+    fn call<'a>(&'a self, _req: Request<State>) -> BoxFuture<'a, Response> {
         let res = self.into();
-        Box::pin(async move { Ok(res) })
+        Box::pin(async move { res })
     }
 }
 

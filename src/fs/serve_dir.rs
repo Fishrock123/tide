@@ -1,5 +1,5 @@
 use crate::log;
-use crate::{Body, Endpoint, Request, Response, Result, StatusCode};
+use crate::{Body, Endpoint, Request, Response, StatusCode};
 
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
@@ -21,7 +21,7 @@ impl<State> Endpoint<State> for ServeDir
 where
     State: Send + Sync + 'static,
 {
-    fn call<'a>(&'a self, req: Request<State>) -> BoxFuture<'a, Result> {
+    fn call<'a>(&'a self, req: Request<State>) -> BoxFuture<'a, Response> {
         let path = req.url().path();
         let path = path.trim_start_matches(&self.prefix);
         let path = path.trim_start_matches('/');
@@ -41,12 +41,12 @@ where
         Box::pin(async move {
             if !file_path.starts_with(&self.dir) {
                 log::warn!("Unauthorized attempt to read: {:?}", file_path);
-                return Ok(Response::new(StatusCode::Forbidden));
+                return Response::new(StatusCode::Forbidden);
             }
             let body = Body::from_file(&file_path).await?;
             let mut res = Response::new(StatusCode::Ok);
             res.set_body(body);
-            Ok(res)
+            res
         })
     }
 }

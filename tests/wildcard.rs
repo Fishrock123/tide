@@ -1,34 +1,34 @@
 use http_types::{Method, StatusCode, Url};
-use tide::{http, Request};
+use tide::{http, Request, Response};
 
-async fn add_one(cx: Request<()>) -> Result<String, tide::Error> {
+async fn add_one(cx: Request<()>) -> Response {
     match cx.param::<i64>("num") {
-        Ok(num) => Ok((num + 1).to_string()),
-        Err(err) => Err(tide::Error::new(StatusCode::BadRequest, err)),
+        Ok(num) => (num + 1).to_string().into(),
+        Err(err) => Err(tide::Error::new(StatusCode::BadRequest, err))?,
     }
 }
 
-async fn add_two(cx: Request<()>) -> Result<String, tide::Error> {
+async fn add_two(cx: Request<()>) -> Response {
     let one = cx
         .param::<i64>("one")
         .map_err(|err| tide::Error::new(StatusCode::BadRequest, err))?;
     let two = cx
         .param::<i64>("two")
         .map_err(|err| tide::Error::new(StatusCode::BadRequest, err))?;
-    Ok((one + two).to_string())
+    (one + two).to_string().into()
 }
 
-async fn echo_path(cx: Request<()>) -> Result<String, tide::Error> {
+async fn echo_path(cx: Request<()>) -> Response {
     match cx.param::<String>("path") {
-        Ok(path) => Ok(path),
-        Err(err) => Err(tide::Error::new(StatusCode::BadRequest, err)),
+        Ok(path) => path.into(),
+        Err(err) => Err(tide::Error::new(StatusCode::BadRequest, err))?,
     }
 }
 
-async fn echo_empty(cx: Request<()>) -> Result<String, tide::Error> {
+async fn echo_empty(cx: Request<()>) -> Response {
     match cx.param::<String>("") {
-        Ok(path) => Ok(path),
-        Err(err) => Err(tide::Error::new(StatusCode::BadRequest, err)),
+        Ok(path) => path.into(),
+        Err(err) => Err(tide::Error::new(StatusCode::BadRequest, err))?,
     }
 }
 
@@ -174,7 +174,7 @@ async fn invalid_wildcard() {
 #[async_std::test]
 async fn nameless_wildcard() {
     let mut app = tide::Server::new();
-    app.at("/echo/:").get(|_| async move { Ok("") });
+    app.at("/echo/:").get(|_| async move { "".into() });
 
     let req = http::Request::new(
         Method::Get,

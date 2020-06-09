@@ -19,7 +19,7 @@ pub trait Middleware<State>: 'static + Send + Sync {
         &'a self,
         request: Request<State>,
         next: Next<'a, State>,
-    ) -> BoxFuture<'a, crate::Result>;
+    ) -> BoxFuture<'a, Response>;
 
     /// Set the middleware's name. By default it uses the type signature.
     fn name(&self) -> &str {
@@ -56,10 +56,10 @@ where
         &'a self,
         request: Request<State>,
         next: Next<'a, State>,
-    ) -> BoxFuture<'a, crate::Result> {
+    ) -> BoxFuture<'a, Response> {
         Box::pin(async move {
             let request = (self.0)(request).await;
-            Ok(next.run(request).await)
+            next.run(request).await
         })
     }
 }
@@ -77,9 +77,9 @@ where
 /// let mut app = tide::new();
 /// app.middleware(After(|res: Response| async move {
 ///     match res.status() {
-///         http::StatusCode::NotFound => Ok("Page not found".into()),
-///         http::StatusCode::InternalServerError => Ok("Something went wrong".into()),
-///         _ => Ok(res),
+///         http::StatusCode::NotFound => "Page not found".into(),
+///         http::StatusCode::InternalServerError => "Something went wrong".into(),
+///         _ => res,
 ///     }
 /// }));
 /// ```
@@ -89,13 +89,13 @@ impl<State, F, Fut> Middleware<State> for After<F>
 where
     State: Send + Sync + 'static,
     F: Fn(Response) -> Fut + Send + Sync + 'static,
-    Fut: std::future::Future<Output = crate::Result> + Send + Sync,
+    Fut: std::future::Future<Output = Response> + Send + Sync,
 {
     fn handle<'a>(
         &'a self,
         request: Request<State>,
         next: Next<'a, State>,
-    ) -> BoxFuture<'a, crate::Result> {
+    ) -> BoxFuture<'a, Response> {
         Box::pin(async move {
             let response = next.run(request).await;
             (self.0)(response).await
@@ -108,13 +108,13 @@ where
     F: Send
         + Sync
         + 'static
-        + for<'a> Fn(Request<State>, Next<'a, State>) -> BoxFuture<'a, crate::Result>,
+        + for<'a> Fn(Request<State>, Next<'a, State>) -> BoxFuture<'a, Response>,
 {
     fn handle<'a>(
         &'a self,
         req: Request<State>,
         next: Next<'a, State>,
-    ) -> BoxFuture<'a, crate::Result> {
+    ) -> BoxFuture<'a, Response> {
         (self)(req, next)
     }
 }

@@ -7,7 +7,7 @@ fn main() -> Result<(), std::io::Error> {
         app.at("/").get(|_| async move {
             let mut res = Response::new(StatusCode::Ok);
             res.set_body(Body::from_file(file!()).await.unwrap());
-            Ok(res)
+            res
         });
         app.listen("127.0.0.1:8080").await?;
         Ok(())
