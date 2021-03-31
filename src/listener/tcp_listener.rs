@@ -9,6 +9,9 @@ use async_std::net::{self, SocketAddr, TcpStream};
 use async_std::prelude::*;
 use async_std::{io, task};
 
+#[cfg(feature = "tracing")]
+use tracing_crate::{info_span, Instrument};
+
 /// This represents a tide [Listener](crate::listener::Listener) that
 /// wraps an [async_std::net::TcpListener]. It is implemented as an
 /// enum in order to allow creation of a tide::listener::TcpListener
@@ -52,8 +55,15 @@ fn handle_tcp<State: Clone + Send + Sync + 'static>(app: Server<State>, stream: 
         let fut = async_h1::accept(stream, |mut req| async {
             req.set_local_addr(local_addr);
             req.set_peer_addr(peer_addr);
-            app.respond(req).await
+            let res_fut = app.respond(req);
+            #[cfg(feature = "tracing")]
+            let res_fut = res_fut.instrument(info_span!("tide.server.respond"));
+            
+            res_fut.await
         });
+
+        #[cfg(feature = "tracing")]
+        let fut = fut.instrument(info_span!("tide.server.tcp.h1.accept"));
 
         if let Err(error) = fut.await {
             log::error!("async-h1 error", { error: error.to_string() });

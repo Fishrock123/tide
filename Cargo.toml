@@ -30,6 +30,7 @@ h1-server = ["async-h1"]
 logger = ["femme"]
 docs = ["unstable"]
 sessions = ["async-session", "cookies"]
+tracing = ["tracing_crate", "tracing-futures"]
 unstable = []
 
 [dependencies]
@@ -48,6 +49,15 @@ pin-project-lite = "0.2.0"
 route-recognizer = "0.2.0"
 serde = "1.0.117"
 serde_json = "1.0.59"
+
+# tracing feature
+[dependencies.tracing_crate]
+version = "0.1"
+optional = true
+package = "tracing"
+[dependencies.tracing-futures]
+version = "0.2"
+optional = true
 
 [dev-dependencies]
 async-std = { version = "1.6.5", features = ["unstable", "attributes"] }
